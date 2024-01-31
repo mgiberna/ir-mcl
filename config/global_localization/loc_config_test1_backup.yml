@@ -2,26 +2,27 @@
 
 # Inputs
 # Mesh map file
-map_file: 'data/simulation/occmap.npy' # Update this
+map_file: 'data/ipblab/occmap.npy'
 map_res: 0.05
 # poses used to build the map
-map_pose_file: 'data/simulation/SE1/T1/room284.json' # Update this
+map_pose_file: 'data/ipblab/loc_test/test1/seq_1.json'
 # ground truth poses file
-data_file: 'data/simulation/SE1/T1/room284.json' # Update this
+data_file: 'data/ipblab/loc_test/test1/seq_1.json'
 # downsample beams:
 max_beams: 32
 # Transformation from LiDAR to Robot
-T_b2l: 'data/simulation/SE1/b2l.txt' # Update this
+T_b2l: 'data/ipblab/loc_test/b2l.txt'
 # the size of map: [min_x, max_x, min_y, max_y]
-map_size: [ -4.3, 4.2, -7.3, 7.4] # Update this for each map
+map_size: [-15, 17.5, -12.5, 5] 
 
 # Evaluation
-gt_file: 'data/simulation/SE1/T1/room284_gt_pose.txt' # Update this
+gt_file: 'data/ipblab/loc_test/test1/seq_1_gt_pose.txt'
+
 # Output
 # path to save localization results
-result_path: 'results/simulation/SE1/T1/loc_results.npz' # Update this
+result_path: 'results/ipblab/loc_test/test1/loc_results.npz'
 # plot the final localization results
-plot_loc_results: False
+plot_loc_results: True
 
 
 sensor_model: 'nog'
@@ -45,7 +46,7 @@ r2_noisy: 0.01
 # motion model noisy coefficient
 alpha: [0.01, 0.01, 0.05, 0.05]
 # pose tracking or global localization
-pose_tracking: True
+pose_tracking: false
 init_noise: [0.25, 0.25, 0.0685]
 # start frame index
 start_idx: 0
@@ -60,5 +61,5 @@ converge_thres: 2
 # and using only num_reduced particles.
 num_reduced: 5000
 # visualize the localization results online
-visualize: False
+visualize: false
 

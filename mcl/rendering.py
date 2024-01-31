@@ -79,7 +79,7 @@ class NOGRendering:
     """
 
     def __init__(self, directions, near, far, ckpt_path,
-                 L_pos=10, feature_size=256, use_skip=True, N_samples=256,
+                 L_pos=10, feature_size=256, use_skip=True, N_samples=64,
                  map_size=[-50, 50, -50, 50], grid_res=0.05, device=torch.device('cpu')):
         # lidar params
         self.directions = directions
@@ -126,7 +126,7 @@ class NOGRendering:
         # inference
         with torch.no_grad():
             N_cells = grid.shape[0]
-            chunk = 2500000
+            chunk = 266496
             out_grid = []
             for i in range(0, N_cells, chunk):
                 out_grid.append(self.nof_model(self.embedding_position(grid[i:i + chunk])))

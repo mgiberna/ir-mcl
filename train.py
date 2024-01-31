@@ -149,7 +149,7 @@ if __name__ == '__main__':
                       callbacks=[checkpoint_callback],
                       logger=logger,
                       enable_model_summary=False,
-                      accelerator='gpu',
+                      accelerator='cuda',
                       devices=1,
                       num_sanity_val_steps=-1,
                       benchmark=True)

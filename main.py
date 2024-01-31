@@ -43,7 +43,7 @@ if __name__ == '__main__':
     grid_res = config['grid_res']
     numParticles = config['numParticles']
     reduced_num = config['num_reduced']
-    visualize = config['visualize']
+    visualize = True
     result_path = config['result_path']
 
     # load input data

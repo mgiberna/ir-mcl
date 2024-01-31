@@ -38,7 +38,7 @@ def eval_pts(pts1, pts2, threshold=0.5):
 
     precision = np.mean((dist1<threshold).astype('float'))
     recall = np.mean((dist2<threshold).astype('float'))
-    fscore = 2 * precision * recall / (precision + recall)
+    fscore = 2 * precision * recall / (precision + recall + 0.0000000000000001)
     cd = np.mean(dist1) + np.mean(dist2)
 
     return cd, fscore

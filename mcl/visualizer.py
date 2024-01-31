@@ -75,13 +75,18 @@ class Visualizer(object):
         self.ax0.plot(map_poses[:, 0], map_poses[:, 1], '--', alpha=0.5, c='black', label='map')
         if occ_map is not None:
             map_res = 0.05
-            ox, oy = occ_map.shape[0] // 2, occ_map.shape[1] // 2
+            #ox, oy = occ_map.shape[0] // 2, occ_map.shape[1] // 2
+            ox, oy = 43, 133
 
             occ_set = []
             unknow_set = []
             # X, Y = occ_map.shape
             X_min, X_max = int(self.map_size[0] / map_res + ox), int(self.map_size[1] / map_res + ox)
             Y_min, Y_max = int(self.map_size[2] / map_res + oy), int(self.map_size[3] / map_res + oy)
+            #X_min, X_max = int(self.map_size[0] / map_res), int(self.map_size[1] / map_res)  
+            #Y_min, Y_max = int(self.map_size[2] / map_res), int(self.map_size[3] / map_res) 
+            print(X_min, X_max, Y_min, Y_max)
+            print(occ_map.shape)
             for x in range(X_min, X_max):
                 for y in range(Y_min, Y_max):
                     if occ_map[x, y] > 0.9:
