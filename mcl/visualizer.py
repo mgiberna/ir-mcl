@@ -75,8 +75,8 @@ class Visualizer(object):
         self.ax0.plot(map_poses[:, 0], map_poses[:, 1], '--', alpha=0.5, c='black', label='map')
         if occ_map is not None:
             map_res = 0.05
-            #ox, oy = occ_map.shape[0] // 2, occ_map.shape[1] // 2
-            ox, oy = 43, 133
+            ox, oy = occ_map.shape[0] // 2, occ_map.shape[1] // 2
+
 
             occ_set = []
             unknow_set = []
@@ -126,7 +126,7 @@ class Visualizer(object):
         # setup ax1
         self.ax_location_err, = self.ax1.plot([], [], c='g')
 
-        self.ax1.set(xlim=[0, len(self.location_gt)], ylim=[0, self.err_thres])
+        self.ax1.set(xlim=[0, len(self.location_gt)], ylim=[0, self.err_thres / 10])
         self.ax1.set_xlabel('Frame id')
         self.ax1.set_ylabel('Location err [m]')
 
