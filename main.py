@@ -157,11 +157,11 @@ if __name__ == '__main__':
         os.makedirs(os.path.dirname(result_path))
 
     result_dir = os.path.dirname(result_path)
-    summary_loc(results, start_idx, numParticles,
+    summary_loc(results, start_idx + offset, numParticles,
                 timestamps_gt, result_dir, config['gt_file'])
 
     np.savez_compressed(result_path, timestamps=timestamps_gt, odoms=odoms, poses_gt=poses_gt,
-                        particles=results, start_idx=start_idx, numParticles=numParticles)
+                        particles=results, start_idx=start_idx + offset, numParticles=numParticles)
 
     print('save the localization results at:', result_path)
 

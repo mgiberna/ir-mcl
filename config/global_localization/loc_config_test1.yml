@@ -19,7 +19,7 @@ map_size: [-4.5, 4, -7.5, 7.1] # Update this for each map -- T1: [-4.5, 4, -7.5,
 gt_file: 'data/simulation/SE1/T1/room284_gt_pose.txt' # Update this
 # Output
 # path to save localization results
-result_path: 'results/simulation/SE1/T1/loc_results.npz' # Update this
+result_path: 'results/simulation/SE1/T1/loc_results_T1_with_offset.npz' # Update this
 # plot the final localization results
 plot_loc_results: False
 
@@ -60,5 +60,5 @@ converge_thres: 2
 # and using only num_reduced particles.
 num_reduced: 5000
 # visualize the localization results online
-visualize: False
+visualize: True
 
