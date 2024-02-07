@@ -131,6 +131,7 @@ if __name__ == '__main__':
             if curr_timestamp > 20 and not is_converged:
                 is_converged = True
                 offset = frame_idx
+                print('First offset', offset)
                 print('Initialization is finished!')
                 # cutoff redundant particles and leave only num of particles
                 idxes = np.argsort(particles[:, 3])[::-1]
@@ -142,6 +143,9 @@ if __name__ == '__main__':
         cost_time = np.round(time.time() - start, 10)
         print('finished frame {} at timestamp {:.2f}s with time cost: {}s'.format(
             frame_idx, timestamps_gt[frame_idx], cost_time))
+        #print(timestamps_gt[frame_idx])
+        #print(curr_timestamp)
+    
 
         curr_numParticles = particles.shape[0]
         results[frame_idx, :curr_numParticles] = particles
@@ -152,6 +156,9 @@ if __name__ == '__main__':
             visualizer.fig.canvas.flush_events()
 
 
+    offset = offset * 2
+    print("StartIDX", start_idx)
+    print('Second offset', offset)
     # evaluate localization results (through evo)
     if not os.path.exists(os.path.dirname(result_path)):
         os.makedirs(os.path.dirname(result_path))

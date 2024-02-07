@@ -5,7 +5,7 @@
 map_file: 'data/simulation/occmap_T1.npy' # Update this
 map_res: 0.05
 # poses used to build the map
-map_pose_file: 'data/simulation/SE1/T1/room284.json' # Update this
+map_pose_file: 'ir-mcl/data/ipblab/occmap.npy' #'data/simulation/SE1/T1/room284.json' # Update this
 # ground truth poses file
 data_file: 'data/simulation/SE1/T1/room284.json' # Update this
 # downsample beams:
@@ -13,7 +13,7 @@ max_beams: 32
 # Transformation from LiDAR to Robot
 T_b2l: 'data/simulation/SE1/b2l.txt' # Update this
 # the size of map: [min_x, max_x, min_y, max_y]
-map_size: [-4.5, 4, -7.5, 7.1] # Update this for each map -- T1: [-4.5, 4, -7.5, 7.1] T2: [-4, 4, -7.1, 7.1]
+map_size: [0, 8.3, 0, 14.2] # Update this for each map -- T1: [-4.5, 4, -7.5, 7.1] T2: [-4, 4, -7.1, 7.1]
 
 # Evaluation
 gt_file: 'data/simulation/SE1/T1/room284_gt_pose.txt' # Update this

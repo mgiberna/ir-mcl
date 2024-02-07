@@ -33,7 +33,7 @@ use_skip: True
 N_samples: 256
 chunk: 266496  # 1041*256
 use_disp: False
-ckpt_path: 'config/ipblab_nof_weights.ckpt'
+ckpt_path: 'config/ipblab_nof_weights_updated.ckpt'
 # NOG
 nog_size: [-50, 50, -50, 50]
 nog_res: 0.05

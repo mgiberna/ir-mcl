@@ -17,7 +17,7 @@ class Visualizer(object):
     """
 
     def __init__(self, map_size, poses, map_poses, odoms=None, occ_map=None,
-                 numParticles=1000, grid_res=0.2, start_idx=0, converge_thres=5):
+                 numParticles=1000, grid_res=0.05, start_idx=0, converge_thres=5):
         """ Initialization:
         mapsize: the size of the given map
         poses: ground truth poses.
@@ -75,8 +75,8 @@ class Visualizer(object):
         self.ax0.plot(map_poses[:, 0], map_poses[:, 1], '--', alpha=0.5, c='black', label='map')
         if occ_map is not None:
             map_res = 0.05
-            ox, oy = occ_map.shape[0] // 2, occ_map.shape[1] // 2
-
+            #ox, oy = occ_map.shape[0] // 2, occ_map.shape[1] // 2
+            ox, oy = 0, 0
 
             occ_set = []
             unknow_set = []
