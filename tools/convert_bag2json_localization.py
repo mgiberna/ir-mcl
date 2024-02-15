@@ -25,7 +25,7 @@ if __name__ == '__main__':
 
     # Create an instance of SyncROSBag
     sync_bag = SyncROSBag(args.bag_file)
-    timestamps, scan_data, odom_data, T_b2l, lidar_info = sync_bag.get_data()
+    timestamps, scan_data, odom_data, T_b2l, lidar_info, gt_pose_data = sync_bag.get_data()
 
     print("-> Done!")
 
@@ -38,7 +38,7 @@ if __name__ == '__main__':
     json_converter = DataToJsonConverter(
         timestamps=timestamps,
         odom_data=odom_data,
-        gt_pose_data=odom_data,
+        gt_pose_data=gt_pose_data,
         scan_data=scan_data,
         T_b2l=T_b2l,
         lidar_info=lidar_info

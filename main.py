@@ -155,10 +155,12 @@ if __name__ == '__main__':
             visualizer.fig.canvas.draw()
             visualizer.fig.canvas.flush_events()
 
-
-    offset = offset * 2
+    if offset < 60:
+        offset = 200
+    else:
+        offset = 200 #offset * 4
     print("StartIDX", start_idx)
-    print('Second offset', offset)
+    print('Final offset', offset)
     # evaluate localization results (through evo)
     if not os.path.exists(os.path.dirname(result_path)):
         os.makedirs(os.path.dirname(result_path))

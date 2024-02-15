@@ -209,6 +209,7 @@ class DataToJsonConverter:
 
     def __init__(self, timestamps, odom_data, gt_pose_data, scan_data,
                  T_b2l, lidar_info, skip_frames=1):
+        print(timestamps.shape[0], odom_data.shape[0], gt_pose_data.shape[0], scan_data.shape[0])
         assert timestamps.shape[0] == odom_data.shape[0] \
                == gt_pose_data.shape[0] == scan_data.shape[0], \
             'the frames number should be same in timestamps, pose_gt, odoms, and scans'

@@ -45,11 +45,13 @@ class SyncROSBag:
         # raw data from ROS bag
         self.odom_data = {}
         self.scan_data = {}
+        self.gt_pose_data = {}
 
         # aligned data from ROS bag
         self.sync_timestamps = []
         self.sync_odom_data = []
         self.sync_scan_data = []
+        self.sync_gt_data = []
 
         # static transformation from lidar to base_link
         self.T_base2laser = None
@@ -80,8 +82,9 @@ class SyncROSBag:
         timestamps = np.array(self.sync_timestamps)
         odom_data = np.array(self.sync_odom_data)
         scan_data = np.array(self.sync_scan_data)
+        gt_pose_data = np.array(self.sync_gt_data)
 
-        return timestamps, scan_data, odom_data, self.T_base2laser, self.lidar_info
+        return timestamps, scan_data, odom_data, self.T_base2laser, self.lidar_info, gt_pose_data
 
     def _load_data(self):
         # Open the ROS bag file
@@ -103,10 +106,11 @@ class SyncROSBag:
         # Convert the timestamps to numpy arrays
         scan_timestamps = np.array(list(self.scan_data.keys()))
         odom_timestamps = np.array(list(self.odom_data.keys()))
+        gt_timestamps = np.array(list(self.gt_pose_data.keys()))
 
         # Build KDTree for faster nearest neighbor search
         odom_kdtree = cKDTree(odom_timestamps[:, None])
-
+  
         # Get the total number of timestamps
         total_timestamps = len(self.scan_data)
 
@@ -120,11 +124,24 @@ class SyncROSBag:
             if abs(timestamp - closest_odom_timestamp) > self.time_threshold:
                 continue
             self.sync_odom_data.append(self.odom_data[closest_odom_timestamp])
-
             # Store the laser scan data with its timestamp
             self.sync_scan_data.append(self.scan_data[timestamp])
             self.sync_timestamps.append(timestamp)
+        
+        # Build KDTree for ground truth data 
+        gt_kdtree = cKDTree(gt_timestamps[:, None])
+        
+        for timestamp in self.sync_timestamps:
+            # Find the nearest timestamp in odom_data using KDTree
+            _, gt_idx = gt_kdtree.query(timestamp)
+            closest_gt_timestamp = gt_timestamps[gt_idx]
 
+            # Check if the time difference is within the threshold
+            if abs(timestamp - closest_gt_timestamp) > self.time_threshold:
+                self.sync_gt_data.append(np.zeros((4, 4)))
+                continue
+            self.sync_gt_data.append(self.gt_pose_data[closest_gt_timestamp])
+    
     def _process_scan_message(self, msg):
         # Store the LaserScan message with its timestamp (in seconds)
         self.scan_data[msg.header.stamp.to_sec()] = msg.ranges
@@ -141,9 +158,8 @@ class SyncROSBag:
         # Check for desired transforms
         for transform in msg.transforms:
             if transform.header.frame_id == 'odom' and transform.child_frame_id == 'base_link':
-                if self.pose_from == 'tf':
-                    # Store the odom->base_link transform with its timestamp (in seconds)
-                    self.odom_data[transform.header.stamp.to_sec()] = tf_to_matrix(transform)
+                # Store the odom->base_link transform with its timestamp (in seconds)
+                self.gt_pose_data[transform.header.stamp.to_sec()] = tf_to_matrix(transform)
 
             elif transform.header.frame_id == 'base_link' and \
                     transform.child_frame_id == 'laser_link':
