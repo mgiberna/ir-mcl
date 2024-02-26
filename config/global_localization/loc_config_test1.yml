@@ -19,9 +19,9 @@ map_size: [0, 8.3, 0, 14.2] # Update this for each map -- T1: [-4.5, 4, -7.5, 7.
 gt_file: 'data/simulation/SE1/T1_2/room284_gt_pose.txt' # Update this
 # Output
 # path to save localization results
-result_path: 'results/simulation/SE1/T1/loc_results_SE1_T1.npz' # UPDATE THIS
+result_path: 'results/simulation/SE1/T1/loc_results_SE1_T3.npz' # UPDATE THIS
 # plot the final localization results
-plot_loc_results: False
+plot_loc_results: True
 
 
 sensor_model: 'nog'
@@ -32,7 +32,7 @@ use_skip: True
 N_samples: 256
 chunk: 266496  # 1041*256
 use_disp: False
-ckpt_path: 'config/simulation_nof_weights_SE1_T1.ckpt' # UPDATE THIS
+ckpt_path: 'config/simulation_nof_weights_SE1_T5.ckpt' # UPDATE THIS
 # NOG
 nog_size: [-50, 50, -50, 50]
 nog_res: 0.05
