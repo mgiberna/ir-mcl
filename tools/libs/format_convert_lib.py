@@ -208,21 +208,45 @@ class DataToJsonConverter:
     """
 
     def __init__(self, timestamps, odom_data, gt_pose_data, scan_data,
-                 T_b2l, lidar_info, skip_frames=1):
-        print(timestamps.shape[0], odom_data.shape[0], gt_pose_data.shape[0], scan_data.shape[0])
-        assert timestamps.shape[0] == odom_data.shape[0] \
-               == gt_pose_data.shape[0] == scan_data.shape[0], \
-            'the frames number should be same in timestamps, pose_gt, odoms, and scans'
+                 T_b2l, lidar_info, pc_data=None, tf_data=None, skip_frames=1):
+        
+        if pc_data is not None and tf_data is not None:
+            print(timestamps.shape[0], odom_data.shape[0], gt_pose_data.shape[0], scan_data.shape[0], pc_data.shape[0], tf_data.shape[0])
+            assert timestamps.shape[0] == odom_data.shape[0] \
+                == gt_pose_data.shape[0] == scan_data.shape[0] == pc_data.shape[0] == tf_data.shape[0], \
+                'the frames number should be same in timestamps, pose_gt, odoms, and scans'
 
-        self.timestamps = timestamps[::skip_frames]
-        self.odom_data = odom_data[::skip_frames]
-        self.gt_pose_data = gt_pose_data[::skip_frames]
-        self.scan_data = scan_data[::skip_frames]
+            self.timestamps = timestamps[::skip_frames]
+            self.odom_data = odom_data[::skip_frames]
+            self.gt_pose_data = gt_pose_data[::skip_frames]
+            self.scan_data = scan_data[::skip_frames]
+            self.pc_data = pc_data[::skip_frames]
+            self.tf_data = tf_data[::skip_frames]
 
-        self.T_b2l = T_b2l
-        self.lidar_info = lidar_info
+            self.T_b2l = T_b2l
+            self.lidar_info = lidar_info
 
-        self.json_data = self._initialize_json_data()
+            self.save_pc_and_tf = True
+
+            self.json_data = self._initialize_json_data()
+        else:
+            print(timestamps.shape[0], odom_data.shape[0], gt_pose_data.shape[0], scan_data.shape[0])
+            assert timestamps.shape[0] == odom_data.shape[0] \
+                == gt_pose_data.shape[0] == scan_data.shape[0], \
+                'the frames number should be same in timestamps, pose_gt, odoms, and scans'
+
+            self.timestamps = timestamps[::skip_frames]
+            self.odom_data = odom_data[::skip_frames]
+            self.gt_pose_data = gt_pose_data[::skip_frames]
+            self.scan_data = scan_data[::skip_frames]
+
+            self.T_b2l = T_b2l
+            self.lidar_info = lidar_info
+
+            self.save_pc_and_tf = False
+
+            self.json_data = self._initialize_json_data()
+
 
     def _initialize_json_data(self):
         """
@@ -287,24 +311,46 @@ class DataToJsonConverter:
         Arguments:
             output_file (str): Path to the output JSON file.
         """
-        total_data = len(self.timestamps)
-        with tqdm(total=total_data,
-                  desc="Converting to JSON (for Localization)", unit="scan") as pbar:
-            for timestamp, pose_gt, odom_reading, scan in \
-                    zip(self.timestamps, self.gt_pose_data, self.odom_data, self.scan_data):
-                translation_gt, rotation = \
-                    extract_translation_and_rotation_from_matrix(pose_gt)
-                translation_odom, rotation_odom = \
-                    extract_translation_and_rotation_from_matrix(odom_reading)
+        if self.save_pc_and_tf:
+            total_data = len(self.timestamps)
+            with tqdm(total=total_data,
+                    desc="Converting to JSON (for Localization)", unit="scan") as pbar:
+                for timestamp, pose_gt, odom_reading, scan, pc_data, tf_data in \
+                        zip(self.timestamps, self.gt_pose_data, self.odom_data, self.scan_data, self.pc_data, self.tf_data):
+                    translation_gt, rotation = \
+                        extract_translation_and_rotation_from_matrix(pose_gt)
+                    translation_odom, rotation_odom = \
+                        extract_translation_and_rotation_from_matrix(odom_reading)
 
-                scan_data = {
-                    "timestamp": timestamp,
-                    "pose_gt": [translation_gt[0], translation_gt[1], rotation[2]],
-                    "odom_reading": [translation_odom[0], translation_odom[1], rotation_odom[2]],
-                    "range_reading": scan.tolist()
-                }
-                self.json_data["scans"].append(scan_data)
-                pbar.update(1)
+                    scan_data = {
+                        "timestamp": timestamp,
+                        "pose_gt": [translation_gt[0], translation_gt[1], rotation[2]],
+                        "odom_reading": [translation_odom[0], translation_odom[1], rotation_odom[2]],
+                        "range_reading": scan.tolist(),
+                        "pc_data": self.pc_data.tolist(),
+                        "tf_data": self.tf_data.tolist()
+                    }
+                    self.json_data["scans"].append(scan_data)
+                    pbar.update(1)
+        else:
+            total_data = len(self.timestamps)
+            with tqdm(total=total_data,
+                    desc="Converting to JSON (for Localization)", unit="scan") as pbar:
+                for timestamp, pose_gt, odom_reading, scan in \
+                        zip(self.timestamps, self.gt_pose_data, self.odom_data, self.scan_data):
+                    translation_gt, rotation = \
+                        extract_translation_and_rotation_from_matrix(pose_gt)
+                    translation_odom, rotation_odom = \
+                        extract_translation_and_rotation_from_matrix(odom_reading)
+
+                    scan_data = {
+                        "timestamp": timestamp,
+                        "pose_gt": [translation_gt[0], translation_gt[1], rotation[2]],
+                        "odom_reading": [translation_odom[0], translation_odom[1], rotation_odom[2]],
+                        "range_reading": scan.tolist()
+                    }
+                    self.json_data["scans"].append(scan_data)
+                    pbar.update(1)
 
         # save to file
         output_dir = os.path.join(os.path.dirname(output_file))

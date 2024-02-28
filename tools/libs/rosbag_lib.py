@@ -5,7 +5,7 @@ from scipy.spatial import cKDTree
 
 import rosbag
 
-from .tools_utils import tf_to_matrix, odometry_to_matrix, extract_laser_config
+from .tools_utils import tf_to_matrix, odometry_to_matrix, extract_laser_config, point_cloud2_to_dict, tf_to_dict
 
 
 class SyncROSBag:
@@ -37,21 +37,29 @@ class SyncROSBag:
         _load_data(): Load raw data from the ROS bag.
         _synchronize_data(): Synchronize the loaded data based on timestamps and pose source.
     """
-    def __init__(self, bag_file, pose_from='odom', time_threshold=0.1):
+    def __init__(self, bag_file, save_pc_and_tf, inference_bag=False, pose_from='odom', time_threshold=0.1):
         self.bag_file = bag_file
         self.pose_from = pose_from
         self.time_threshold = time_threshold
+        self.save_pc_and_tf = save_pc_and_tf
+        self.inference_bag = inference_bag
 
         # raw data from ROS bag
         self.odom_data = {}
         self.scan_data = {}
         self.gt_pose_data = {}
+        if save_pc_and_tf:
+            self.pc_data = {}
+            self.tf_data = {}
 
         # aligned data from ROS bag
         self.sync_timestamps = []
         self.sync_odom_data = []
         self.sync_scan_data = []
         self.sync_gt_data = []
+        if save_pc_and_tf:
+            self.sync_pc_data = []
+            self.sync_tf_data = []
 
         # static transformation from lidar to base_link
         self.T_base2laser = None
@@ -83,21 +91,38 @@ class SyncROSBag:
         odom_data = np.array(self.sync_odom_data)
         scan_data = np.array(self.sync_scan_data)
         gt_pose_data = np.array(self.sync_gt_data)
-
+        if self.save_pc_and_tf:
+            pc_data = np.array(self.sync_pc_data)
+            tf_data = np.array(self.sync_tf_data)
+            return timestamps, scan_data, odom_data, self.T_base2laser, self.lidar_info, gt_pose_data, pc_data, tf_data
         return timestamps, scan_data, odom_data, self.T_base2laser, self.lidar_info, gt_pose_data
 
     def _load_data(self):
         # Open the ROS bag file
         bag = rosbag.Bag(self.bag_file)
 
-        # Iterate over the messages in the bag
-        for topic, msg, t in bag.read_messages(topics=['scan', 'odom', 'tf']):
-            if topic == 'scan':
-                self._process_scan_message(msg)
-            elif topic == 'odom':
-                self._process_odom_message(msg)
-            elif topic == 'tf':
-                self._process_tf_message(msg)
+        if self.inference_bag == True:
+            print("Inference bag detected. Loading additional topics: scan, /platform/odometry, tf, /platform/velodyne_points")
+            # Iterate over the messages in the bag
+            for topic, msg, t in bag.read_messages(topics=['scan', '/platform/odometry', 'tf', '/platform/velodyne_points']):
+                if topic == 'scan':
+                    self._process_scan_message(msg)
+                elif topic == '/platform/odometry':
+                    self._process_odom_message(msg)
+                elif topic == 'tf':
+                    self._process_tf_message(msg)
+                elif topic == '/platform/velodyne_points' and self.save_pc_and_tf:
+                    self._process_pointcloud_message(msg)
+        else:
+            print("Inference bag not detected. Loading additional topics: /odom, /scan, /tf")
+            # Iterate over the messages in the bag
+            for topic, msg, t in bag.read_messages(topics=['scan', 'odom', 'tf']):
+                if topic == 'scan':
+                    self._process_scan_message(msg)
+                elif topic == 'odom':
+                    self._process_odom_message(msg)
+                elif topic == 'tf':
+                    self._process_tf_message(msg)
 
         # Close the ROS bag file
         bag.close()
@@ -107,6 +132,9 @@ class SyncROSBag:
         scan_timestamps = np.array(list(self.scan_data.keys()))
         odom_timestamps = np.array(list(self.odom_data.keys()))
         gt_timestamps = np.array(list(self.gt_pose_data.keys()))
+        if self.save_pc_and_tf:
+            pc_timestamps = np.array(list(self.pc_data.keys()))
+            tf_timestamps = np.array(list(self.tf_data.keys()))
 
         # Build KDTree for faster nearest neighbor search
         odom_kdtree = cKDTree(odom_timestamps[:, None])
@@ -132,7 +160,7 @@ class SyncROSBag:
         gt_kdtree = cKDTree(gt_timestamps[:, None])
         
         for timestamp in self.sync_timestamps:
-            # Find the nearest timestamp in odom_data using KDTree
+            # Find the nearest timestamp in gt_data using KDTree
             _, gt_idx = gt_kdtree.query(timestamp)
             closest_gt_timestamp = gt_timestamps[gt_idx]
 
@@ -141,6 +169,32 @@ class SyncROSBag:
                 self.sync_gt_data.append(np.zeros((4, 4)))
                 continue
             self.sync_gt_data.append(self.gt_pose_data[closest_gt_timestamp])
+        if self.save_pc_and_tf:
+            # Build KDTree for pc data 
+            pc_kdtree = cKDTree(pc_timestamps[:, None])
+            
+            for timestamp in self.sync_timestamps:
+                # Find the nearest timestamp in pc_data using KDTree
+                _, pc_idx = pc_kdtree.query(timestamp)
+                closest_pc_timestamp = pc_timestamps[pc_idx]
+
+                # Check if the time difference is within the threshold
+                if abs(timestamp - closest_pc_timestamp) > self.time_threshold:
+                    continue
+                self.sync_pc_data.append(self.pc_data[closest_pc_timestamp])
+
+            # Build KDTree for tf data
+            tf_kdtree = cKDTree(tf_timestamps[:, None])
+
+            for timestamp in self.sync_timestamps:
+                # Find the nearest timestamp in tf_data using KDTree
+                _, tf_idx = tf_kdtree.query(timestamp)
+                closest_tf_timestamp = tf_timestamps[tf_idx]
+
+                # Check if the time difference is within the threshold
+                if abs(timestamp - closest_tf_timestamp) > self.time_threshold:
+                    continue
+                self.sync_tf_data.append(self.tf_data[closest_tf_timestamp])    
     
     def _process_scan_message(self, msg):
         # Store the LaserScan message with its timestamp (in seconds)
@@ -158,11 +212,20 @@ class SyncROSBag:
         # Check for desired transforms
         for transform in msg.transforms:
             if transform.header.frame_id == 'odom' and transform.child_frame_id == 'base_link':
-                # Store the odom->base_link transform with its timestamp (in seconds)
+                # Store the odom->base_link (gt poses) transform with its timestamp (in seconds)
                 self.gt_pose_data[transform.header.stamp.to_sec()] = tf_to_matrix(transform)
+            elif self.save_pc_and_tf:
+                # Store all the other transforms with their timestamps (in seconds)
+                tf_dict = tf_to_dict(transform)
+                self.tf_data[transform.header.stamp.to_sec()] = tf_dict
 
-            elif transform.header.frame_id == 'base_link' and \
+            if transform.header.frame_id == 'base_link' and \
                     transform.child_frame_id == 'laser_link':
                 # Store the base_link->laser_link transform (static)
                 if self.T_base2laser is None:
                     self.T_base2laser = tf_to_matrix(transform)
+
+
+    def _process_pointcloud_message(self, msg):
+        pc_dict = point_cloud2_to_dict(msg)
+        self.pc_data[msg.header.stamp.to_sec()] = pc_dict

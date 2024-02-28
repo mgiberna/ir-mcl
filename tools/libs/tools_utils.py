@@ -3,8 +3,12 @@ import numpy as np
 from scipy.spatial.transform import Rotation as R
 
 from nav_msgs.msg import Odometry
-from sensor_msgs.msg import LaserScan
+from sensor_msgs.msg import LaserScan, PointCloud2
+import sensor_msgs.point_cloud2 as pc2
+from std_msgs.msg import Header
 from geometry_msgs.msg import TransformStamped
+
+import struct
 
 
 def xyzq_to_matrix(translation, quaternion):
@@ -142,3 +146,65 @@ def extract_laser_config(laser_msg: LaserScan):
     }
 
     return laser_config
+
+def point_cloud2_to_dict(msg):
+    # Extracting data from the PointCloud2 message
+    #data = str(list(msg.data))
+    
+    # Convert point cloud data to a list of dictionaries
+    #points = pc2.read_points(msg, field_names=("x", "y", "z"), skip_nans=True)
+    #data = [{"x": x, "y": y, "z": z} for x, y, z in points]
+
+    # Convert point cloud data to a flat list of coordinates
+    points = pc2.read_points(msg, field_names=("x", "y", "z"), skip_nans=True)
+    data = [coord for point in points for coord in point]
+    
+    height = msg.height
+    width = msg.width
+    fields = [{'name': field.name, 'offset': field.offset, 'datatype': field.datatype, 'count': field.count} for field in msg.fields]
+    is_bigendian = msg.is_bigendian
+    point_step = msg.point_step
+    row_step = msg.row_step
+    is_dense = msg.is_dense
+    header = {'seq': msg.header.seq, 'stamp': {'secs': msg.header.stamp.secs, 'nsecs': msg.header.stamp.nsecs}, 'frame_id': msg.header.frame_id}
+
+    # Creating a dictionary to store the data and header
+    pc_dict = {
+        'data': data,
+        'height': height,
+        'width': width,
+        'fields': fields,
+        'is_bigendian': is_bigendian,
+        'point_step': point_step,
+        'row_step': row_step,
+        'is_dense': is_dense,
+        'header': header
+    }
+
+    return pc_dict
+
+def tf_to_dict(msg):
+    # Extracting data from the TransformStamped message
+    transform_dict = {
+        'transform': {
+            'translation': {
+                'x': msg.transform.translation.x,
+                'y': msg.transform.translation.y,
+                'z': msg.transform.translation.z
+            },
+            'rotation': {
+                'x': msg.transform.rotation.x,
+                'y': msg.transform.rotation.y,
+                'z': msg.transform.rotation.z,
+                'w': msg.transform.rotation.w
+            }
+        },
+        'header': {
+            'seq': msg.header.seq,
+            'stamp': {'secs': msg.header.stamp.secs, 'nsecs': msg.header.stamp.nsecs},
+            'frame_id': msg.header.frame_id
+        },
+        'child_frame_id': msg.child_frame_id
+    }
+
+    return transform_dict
