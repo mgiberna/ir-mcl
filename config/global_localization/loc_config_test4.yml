@@ -2,25 +2,24 @@
 
 # Inputs
 # Mesh map file
-map_file: 'data/ipblab/occmap.npy'
+map_file: 'data/simulation/occmap_SE4_T1.npy' # Update this
 map_res: 0.05
 # poses used to build the map
-map_pose_file: 'data/ipblab/loc_test/test4/seq_4.json'
+map_pose_file: 'data/simulation/SE4/T0/SE4_T0.json' # Update this
 # ground truth poses file
-data_file: 'data/ipblab/loc_test/test4/seq_4.json'
+data_file: 'data/simulation/SE4/T0/SE4_T0.json' # Update this
 # downsample beams:
 max_beams: 32
 # Transformation from LiDAR to Robot
-T_b2l: 'data/ipblab/loc_test/b2l.txt'
+T_b2l: 'data/simulation/SE4/b2l.txt' # Update this
 # the size of map: [min_x, max_x, min_y, max_y]
-map_size: [-15, 17.5, -12.5, 5]
+map_size: [0, 14.4, 0, 14.0] # Update this for each map -- T1: [-4.5, 4, -7.5, 7.1] T2: [-4, 4, -7.1, 7.1]
 
 # Evaluation
-gt_file: 'data/ipblab/loc_test/test4/seq_4_gt_pose.txt'
-
+gt_file: 'data/simulation/SE4/T0/SE4_T0_gt_pose.txt' # Update this
 # Output
 # path to save localization results
-result_path: 'results/ipblab/loc_test/test4/loc_results.npz'
+result_path: 'results/simulation/SE1/T1/loc_results_SE4_T5.npz' # UPDATE THIS for each map
 # plot the final localization results
 plot_loc_results: True
 
@@ -33,7 +32,7 @@ use_skip: True
 N_samples: 256
 chunk: 266496  # 1041*256
 use_disp: False
-ckpt_path: 'config/ipblab_nof_weights.ckpt'
+ckpt_path: 'config/simulation_nof_weights_SE4_T5.ckpt' # UPDATE THIS for each map
 # NOG
 nog_size: [-50, 50, -50, 50]
 nog_res: 0.05
@@ -44,12 +43,10 @@ r1_noisy: 0.01
 d_noisy: 0.01
 r2_noisy: 0.01
 # motion model noisy coefficient
-#alpha: [0.314, 0.314, 0.5, 0.5]
 alpha: [0.01, 0.01, 0.05, 0.05]
 # pose tracking or global localization
 pose_tracking: false
 init_noise: [0.25, 0.25, 0.0685]
-#init_noise: [0, 0, 0]
 # start frame index
 start_idx: 0
 # resolution of grid still in use for initialization
@@ -63,5 +60,5 @@ converge_thres: 2
 # and using only num_reduced particles.
 num_reduced: 5000
 # visualize the localization results online
-visualize: false
+visualize: True
 
