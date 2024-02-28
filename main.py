@@ -13,13 +13,62 @@ import time
 import numpy as np
 import matplotlib.pyplot as plt
 
-from utils import load_data, summary_loc
+from utils import load_data, summary_loc, particles2pose
 from mcl.initialization import init_particles_pose_tracking, init_particles_uniform
 from mcl.motion_model import gen_commands_srrg
 from mcl.sensor_model import SensorModel
 from mcl.srrg_utils.pf_library.pf_utils import PfUtils
 from mcl.vis_loc_result import plot_traj_result
 from mcl.visualizer import Visualizer
+
+from nav_msgs.msg import Odometry
+from geometry_msgs.msg import Twist, Pose, Point, Quaternion
+import rospy
+
+def get_odom_from_estimated_pose(estimated_pose, last_estimated_pose, curr_timestamp, last_timestamp):
+    x = estimated_pose[0]
+    y = estimated_pose[1]
+    theta = estimated_pose[2]
+
+    x_last = last_estimated_pose[0]
+    y_last = last_estimated_pose[1]
+    theta_last = last_estimated_pose[2]
+
+    x_delta = x - x_last
+    y_delta = y - y_last
+    theta_delta = theta - theta_last
+
+    dt = curr_timestamp - last_timestamp
+
+    linear_velocity_x = x_delta / dt
+    linear_velocity_y = y_delta / dt
+    angular_velocity = theta_delta / dt
+
+    odom_msg = Odometry()
+    odom_msg.header.stamp = rospy.Time.from_sec(curr_timestamp)
+    odom_msg.header.frame_id = "odom"
+    odom_msg.child_frame_id = "body"
+
+    odom_msg.pose.pose = Pose()
+    odom_msg.pose.pose.position = Point(x, y, 0.0)  
+    odom_msg.pose.pose.orientation = Quaternion(0.0, 0.0, theta, 1.0) 
+    
+    odom_msg.twist.twist = Twist()
+    odom_msg.twist.twist.linear.x = linear_velocity_x
+    odom_msg.twist.twist.linear.y = linear_velocity_y
+    odom_msg.twist.twist.angular.z = angular_velocity
+    
+    return odom_msg
+
+def get_estimated_pose(particles, numParticles, selection_rate=0.8):
+    """ calculate the estimated poses.
+    """
+    sorted_data = particles[particles[:, 3].argsort()]
+    # only use the top selection_rate particles to estimate the position
+    selected_particles = sorted_data[-int(selection_rate * numParticles):]
+    estimated_pose = particles2pose(selected_particles)
+
+    return estimated_pose # [x, y, theta]
 
 
 def get_args():
@@ -37,6 +86,12 @@ if __name__ == '__main__':
     # load config file
     config_filename = args.config_file
     config = yaml.safe_load(open(config_filename))
+
+    # init ros node
+    rospy.init_node("irmcl_odom_publisher")
+
+    # odom publisher
+    odom_publisher = rospy.Publisher("/irmcl/odometry", Odometry, queue_size=10)
 
     # load parameters
     start_idx = config['start_idx']
@@ -116,6 +171,9 @@ if __name__ == '__main__':
     offset = 0
     is_converged = False
 
+    last_estimated_pose = np.zeros(3)
+    last_timestamp = 0
+
     for frame_idx in range(start_idx, len(poses_gt)):
         curr_timestamp = timestamps_gt[frame_idx]
         start = time.time()
@@ -149,6 +207,16 @@ if __name__ == '__main__':
 
         curr_numParticles = particles.shape[0]
         results[frame_idx, :curr_numParticles] = particles
+
+        #print('Current Timestamp:', curr_timestamp) 
+        #print('Rostime:', rospy.Time.now())
+        estimated_pose = get_estimated_pose(particles, numParticles, selection_rate=0.8)
+        #print('Estimated pose:', estimated_pose)
+        odom_msg = get_odom_from_estimated_pose(estimated_pose, last_estimated_pose, curr_timestamp, last_timestamp)
+        #print('Odom message:', odom_msg)
+        odom_publisher.publish(odom_msg)
+        last_estimated_pose = estimated_pose
+        last_timestamp = curr_timestamp
 
         if visualize:
             visualizer.update(frame_idx, particles)
