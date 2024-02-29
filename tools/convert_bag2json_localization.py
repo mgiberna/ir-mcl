@@ -18,6 +18,8 @@ def get_args():
                         help='whether to save point cloud and tf data to the output json file. Default is False.')
     parser.add_argument('--inference_bag', action="store_true",
                         help='names of topics changes according to inference bag nomenclature. Default is False.')
+    parser.add_argument('--no_gt', action="store_true",
+                        help='if ground truth poses are not available, use odometry as gt. Default is False.')
     return parser.parse_args()
 
 
@@ -27,9 +29,8 @@ if __name__ == '__main__':
     if args.save_pc_and_tf:    
         ############## Step 1: Load bag file ##############
         print("-> Loading bag file... saving point cloud and tf data to the output json file.")
-
         # Create an instance of SyncROSBag
-        sync_bag = SyncROSBag(args.bag_file, save_pc_and_tf=True, inference_bag=args.inference_bag)
+        sync_bag = SyncROSBag(args.bag_file, save_pc_and_tf=True, inference_bag=args.inference_bag, no_gt=args.no_gt)
         timestamps, scan_data, odom_data, T_b2l, lidar_info, gt_pose_data, pc_data, tf_data = sync_bag.get_data()
 
         print("-> Done!")
@@ -60,7 +61,7 @@ if __name__ == '__main__':
         print("-> Loading bag file... not saving point cloud and tf data to the output json file.")
 
         # Create an instance of SyncROSBag
-        sync_bag = SyncROSBag(args.bag_file, save_pc_and_tf=False, inference_bag=args.inference_bag)
+        sync_bag = SyncROSBag(args.bag_file, save_pc_and_tf=False, inference_bag=args.inference_bag, no_gt=args.no_gt)
         timestamps, scan_data, odom_data, T_b2l, lidar_info, gt_pose_data = sync_bag.get_data()
 
         print("-> Done!")

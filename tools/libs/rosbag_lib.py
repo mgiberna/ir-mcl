@@ -37,12 +37,14 @@ class SyncROSBag:
         _load_data(): Load raw data from the ROS bag.
         _synchronize_data(): Synchronize the loaded data based on timestamps and pose source.
     """
-    def __init__(self, bag_file, save_pc_and_tf, inference_bag=False, pose_from='odom', time_threshold=0.1):
+    def __init__(self, bag_file, save_pc_and_tf, inference_bag=False, no_gt=False, pose_from='odom', time_threshold=0.1):
         self.bag_file = bag_file
         self.pose_from = pose_from
         self.time_threshold = time_threshold
         self.save_pc_and_tf = save_pc_and_tf
         self.inference_bag = inference_bag
+        self.no_gt = no_gt
+        print(self.no_gt)
 
         # raw data from ROS bag
         self.odom_data = {}
@@ -113,6 +115,11 @@ class SyncROSBag:
                     self._process_tf_message(msg)
                 elif topic == '/platform/velodyne_points' and self.save_pc_and_tf:
                     self._process_pointcloud_message(msg)
+            
+            # If ground truth data is not available (real experiments), use odometry data as ground truth
+            if self.no_gt:
+                print("Ground truth data not detected. Using odometry data as ground truth.")
+                self.gt_pose_data = self.odom_data
         else:
             print("Inference bag not detected. Loading additional topics: /odom, /scan, /tf")
             # Iterate over the messages in the bag
