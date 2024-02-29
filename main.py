@@ -98,7 +98,7 @@ if __name__ == '__main__':
     grid_res = config['grid_res']
     numParticles = config['numParticles']
     reduced_num = config['num_reduced']
-    visualize = True
+    visualize = config['visualize']
     result_path = config['result_path']
 
     # load input data
@@ -173,6 +173,7 @@ if __name__ == '__main__':
 
     last_estimated_pose = np.zeros(3)
     last_timestamp = 0
+    cost_time_list = []
 
     for frame_idx in range(start_idx, len(poses_gt)):
         curr_timestamp = timestamps_gt[frame_idx]
@@ -201,6 +202,7 @@ if __name__ == '__main__':
         cost_time = np.round(time.time() - start, 10)
         print('finished frame {} at timestamp {:.2f}s with time cost: {}s'.format(
             frame_idx, timestamps_gt[frame_idx], cost_time))
+        cost_time_list.append(cost_time)
         #print(timestamps_gt[frame_idx])
         #print(curr_timestamp)
     
@@ -236,6 +238,12 @@ if __name__ == '__main__':
     result_dir = os.path.dirname(result_path)
     summary_loc(results, start_idx + offset, numParticles,
                 timestamps_gt, result_dir, config['gt_file'])
+    
+    # save the computation time and the avg time cost(first row)
+    avg_time_cost = np.mean(cost_time_list)
+    cost_time_list.insert(0, avg_time_cost)
+    np.savetxt(os.path.join(result_dir, 'time_cost.txt'), cost_time_list)
+    
 
     np.savez_compressed(result_path, timestamps=timestamps_gt, odoms=odoms, poses_gt=poses_gt,
                         particles=results, start_idx=start_idx + offset, numParticles=numParticles)
