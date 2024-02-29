@@ -77,6 +77,8 @@ def get_args():
     parser.add_argument('--config_file', type=str,
                         default='~/ir-mcl/config/loc_config_test1.yml',
                         help='the path for the configuration file.')
+    parser.add_argument('--publish_odometry', action="store_true",
+                        help='publish ros odometry messages to /irmcl/odometry. Default is False.')
 
     return parser.parse_args()
 
@@ -85,13 +87,15 @@ if __name__ == '__main__':
     args = get_args()
     # load config file
     config_filename = args.config_file
+    publish_odometry = args.publish_odometry
     config = yaml.safe_load(open(config_filename))
 
     # init ros node
-    rospy.init_node("irmcl_odom_publisher")
+    if publish_odometry:
+        rospy.init_node("irmcl_odom_publisher")
 
-    # odom publisher
-    odom_publisher = rospy.Publisher("/irmcl/odometry", Odometry, queue_size=10)
+        # odom publisher
+        odom_publisher = rospy.Publisher("/irmcl/odometry", Odometry, queue_size=10)
 
     # load parameters
     start_idx = config['start_idx']
@@ -209,16 +213,17 @@ if __name__ == '__main__':
 
         curr_numParticles = particles.shape[0]
         results[frame_idx, :curr_numParticles] = particles
-
-        #print('Current Timestamp:', curr_timestamp) 
-        #print('Rostime:', rospy.Time.now())
-        estimated_pose = get_estimated_pose(particles, numParticles, selection_rate=0.8)
-        #print('Estimated pose:', estimated_pose)
-        odom_msg = get_odom_from_estimated_pose(estimated_pose, last_estimated_pose, curr_timestamp, last_timestamp)
-        #print('Odom message:', odom_msg)
-        odom_publisher.publish(odom_msg)
-        last_estimated_pose = estimated_pose
-        last_timestamp = curr_timestamp
+        
+        if publish_odometry:
+            #print('Current Timestamp:', curr_timestamp) 
+            #print('Rostime:', rospy.Time.now())
+            estimated_pose = get_estimated_pose(particles, numParticles, selection_rate=0.8)
+            #print('Estimated pose:', estimated_pose)
+            odom_msg = get_odom_from_estimated_pose(estimated_pose, last_estimated_pose, curr_timestamp, last_timestamp)
+            #print('Odom message:', odom_msg)
+            odom_publisher.publish(odom_msg)
+            last_estimated_pose = estimated_pose
+            last_timestamp = curr_timestamp
 
         if visualize:
             visualizer.update(frame_idx, particles)
