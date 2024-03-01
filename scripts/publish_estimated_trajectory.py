@@ -3,9 +3,11 @@
 import rospy
 from nav_msgs.msg import Odometry
 from geometry_msgs.msg import Point, Quaternion, Twist, Pose
+from sensor_msgs.msg import PointCloud2
 import tf
 import numpy as np
 import transformations
+import time
 
 def quaternion_to_euler_angles(qx, qy, qz, qw):
     # Convert quaternion to numpy array
@@ -15,8 +17,7 @@ def quaternion_to_euler_angles(qx, qy, qz, qw):
     euler_angles = transformations.euler_from_quaternion(q_array)
 
     return euler_angles[0], euler_angles[1], euler_angles[2]
-
-
+    
 def get_odom_from_estimated_pose(new_pose_line, last_pose_line):
     timestamp = new_pose_line[0]
     x = new_pose_line[1]
@@ -74,34 +75,46 @@ def get_odom_from_estimated_pose(new_pose_line, last_pose_line):
     
     return odom_msg
 
-
-def publish_odometry_from_file():
-    rospy.init_node('irmcl_odometry_publisher', anonymous=True)
-    file_path = rospy.get_param('file_path', default='../results/simulation/SE1/T1/IRMCL.txt')
+def publish_odometry_from_file(msg, first_timestamp):
+    file_path = rospy.get_param('file_path', default='../results/simulation/SE1/T1/IRMCL_SE3_T3_real.txt')
     topic_name = rospy.get_param('topic_name', default='/irmcl/odometry')
     rate = rospy.Rate(10) 
-
     odom_pub = rospy.Publisher(topic_name, Odometry, queue_size=10)
 
     last_pose_line = np.zeros(8)
-    rate.sleep()
+    not_syncro = True
 
     with open(file_path, 'r') as file:
         for line in file:
             data = line.split()
  
             t, x, y, z, qx, qy, qz, qw = map(float, data)
+            # wait for synchronization
+            if not_syncro:
+                time.sleep(t - first_timestamp)
+                not_syncro = False
+
             new_pose_line = np.array([t, x, y, z, qx, qy, qz, qw])
 
             odom_msg = get_odom_from_estimated_pose(new_pose_line, last_pose_line)
-
+            print("Publishing odometry message with timestamp: ", odom_msg.header.stamp)
             odom_pub.publish(odom_msg)
 
             rate.sleep()
 
 
+def point_cloud_callback(msg):
+    # extract timestamp from the header
+    timestamp = msg.header.stamp
+    timestamp_seconds = timestamp.secs + timestamp.nsecs / 1e9
+    print("Received point cloud message with timestamp: ", timestamp_seconds)
+    # Your processing logic using the timestamp
+    publish_odometry_from_file(msg, timestamp_seconds)
+
+def listener():
+    rospy.init_node('irmcl_odometry_publisher', anonymous=True)
+    rospy.Subscriber('/platform/velodyne_points', PointCloud2, point_cloud_callback)
+    rospy.spin()
+
 if __name__ == '__main__':
-    try:
-        publish_odometry_from_file()
-    except rospy.ROSInterruptException:
-        pass
+    listener()
